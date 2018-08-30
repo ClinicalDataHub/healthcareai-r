@@ -76,6 +76,13 @@ depending on details of imputation.}
 outcome are 0 or 1 they will be converted to factor with levels N and Y for
 classification. Note that which level is the positive class is set in
 training functions rather than here.}
+
+\item{ref_levels}{A named vector that provides the reference levels for
+categorical variables. If make_dummies is TRUE, the reference level will
+not have a column created, making model estimates for other levels relative
+to the reference level. By default, \code{prep_data} sets the mode level to
+the reference level for all character and nominal factors features.
+Reference levels provided will be chosen in the place of the mode level.}
 }
 \value{
 Prepared data frame with reusable recipe object for future data
