@@ -121,7 +121,8 @@ prep_data <- function(d,
                       scale = FALSE,
                       make_dummies = TRUE,
                       add_levels = TRUE,
-                      factor_outcome = TRUE) {
+                      factor_outcome = TRUE,
+                      ref_levels = NULL) {
   # Check to make sure that d is a dframe
   if (!is.data.frame(d)) {
     stop("\"d\" must be a data frame.")
@@ -385,7 +386,7 @@ prep_data <- function(d,
       # make_dummies -----------------------------------------------------------
       if (make_dummies) {
         recipe <- recipe %>%
-          recipes::step_dummy(all_nominal(), - all_outcomes())
+          step_dummy_hcai(all_nominal(), - all_outcomes(), levels = ref_levels)
       }
     }
 
