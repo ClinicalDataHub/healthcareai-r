@@ -74,6 +74,37 @@
 #'  [dummy_names()], [step_regex()], [step_count()],
 #'  [step_ordinalscore()], [step_unorder()], [step_other()]
 #'  [step_novel()]
+#' @examples
+#' data(okc)
+#' okc <- okc[complete.cases(okc),]
+#'
+#' rec <- recipe(~ diet + age + height, data = okc)
+#'
+#' dummies <- rec %>% step_dummy(diet)
+#' dummies <- prep(dummies, training = okc)
+#'
+#' dummy_data <- bake(dummies, newdata = okc)
+#'
+#' unique(okc$diet)
+#' grep("^diet", names(dummy_data), value = TRUE)
+#'
+#' # Obtain the full set of dummy variables using `one_hot` option
+#' rec %>%
+#'   step_dummy(diet, one_hot = TRUE) %>%
+#'   prep(training = okc, retain = TRUE) %>%
+#'   juice(starts_with("diet")) %>%
+#'   names() %>%
+#'   length()
+#'
+#' length(unique(okc$diet))
+#'
+#' # Without one_hot
+#' length(grep("^diet", names(dummy_data), value = TRUE))
+#'
+#'
+#' tidy(dummies, number = 1)
+
+
 step_dummy_hcai <-
   function(recipe,
            ...,
@@ -92,8 +123,6 @@ step_dummy_hcai <-
         one_hot = one_hot,
         naming = naming,
         levels = levels,
-        ref_levels = NULL,
-        dummies = NULL,
         skip = skip
       )
     )
@@ -106,8 +135,6 @@ step_dummy_hcai_new <-
            one_hot = one_hot,
            naming = naming,
            levels = levels,
-           ref_levels = ref_levels,
-           dummies = dummies,
            skip = FALSE
   ) {
     step(
@@ -118,8 +145,6 @@ step_dummy_hcai_new <-
       one_hot = one_hot,
       naming = naming,
       levels = levels,
-      ref_levels = ref_levels,
-      dummies = dummies,
       skip = skip
     )
   }
@@ -138,36 +163,22 @@ prep.step_dummy_hcai <- function(x, training, info = NULL, ...) {
       call. = FALSE
     )
 
-  # I hate doing this but currently we are going to have
-  # to save the terms object from the original (= training)
-  # data
+
+  ## I hate doing this but currently we are going to have
+  ## to save the terms object from the original (= training)
+  ## data
   levels <- vector(mode = "list", length = length(col_names))
   names(levels) <- col_names
-  ref_levels <- character()
   for (i in seq_along(col_names)) {
-    training_col <- getElement(training, col_names[i])
-    existing_levels <- levels(training_col) %in% x$levels[[col_names[i]]]
-    if (any(existing_levels) &&
-        x$levels[[col_names[i]]][1] %in% levels(training_col)) {
-      x$levels[[col_names[i]]] <- c(x$levels[[col_names[i]]], levels(training_col)[!existing_levels])
-    } else {
-      training_mode <- as.character(Mode(training_col))
-      training_levels <- levels(training_col)
-      x$levels[[col_names[i]]] <- c(training_mode, training_levels[-which(training_levels == training_mode)])
-    }
-
     form_chr <- paste0("~", col_names[i])
-    if (x$one_hot) {
+    if(x$one_hot) {
       form_chr <- paste0(form_chr, "-1")
     }
     form <- as.formula(form_chr)
-    suppressWarnings(
-      terms <- model.frame(form,
-                           data = training,
-                           xlev = x$levels[col_names[i]],
-                           na.action = na.pass)
-    )
-
+    terms <- model.frame(form,
+                         data = training,
+                         xlev = x$levels[[i]],
+                         na.action = na.pass)
     levels[[i]] <- attr(terms, "terms")
 
     ## About factor levels here: once dummy variables are made,
@@ -175,29 +186,10 @@ prep.step_dummy_hcai <- function(x, training, info = NULL, ...) {
     ## recipe$levels will remove the original record of the
     ## factor levels at the end of `prep.recipe` since it is
     ## not a factor anymore. We'll save them here and reset them
-    ## in `bake.step_dummy_hcai` just prior to calling `model.matrix`
-
-
-    factor_levels <- x$levels[[col_names[i]]]
-    attr(levels[[i]], "values") <- factor_levels
-
-    ## Create a table of all the variables that will be created
-    tmp_levels <- stringr::str_replace_all(factor_levels, " ", ".")
-    new_dummies <- tibble(
-      feature = col_names[i],
-      dummy = paste(col_names[i], tmp_levels[-1], sep = "_"),
-      ref = tmp_levels[1]
-    )
-    dummies <-
-      if (i == 1) {
-        new_dummies
-      } else {
-        dummies %>%
-          bind_rows(new_dummies)
-      }
-    ref_levels[i] <- tmp_levels[1]
+    ## in `bake.step_dummy` just prior to calling `model.matrix`
+    attr(levels[[i]], "values") <-
+      levels(getElement(training, col_names[i]))
   }
-  names(ref_levels) <- col_names
 
   step_dummy_hcai_new(
     terms = x$terms,
@@ -206,8 +198,6 @@ prep.step_dummy_hcai <- function(x, training, info = NULL, ...) {
     one_hot = x$one_hot,
     naming = x$naming,
     levels = levels,
-    ref_levels = ref_levels,
-    dummies = dummies,
     skip = x$skip
   )
 }
@@ -240,7 +230,7 @@ bake.step_dummy_hcai <- function(object, newdata, ...) {
     orig_var <- names(object$levels)[i]
     fac_type <- attr(object$levels[[i]], "dataClasses")
 
-    if (!any(names(attributes(object$levels[[i]])) == "values"))
+    if(!any(names(attributes(object$levels[[i]])) == "values"))
       stop("Factor level values not recorded", call. = FALSE)
 
     warn_new_levels(
@@ -271,7 +261,7 @@ bake.step_dummy_hcai <- function(object, newdata, ...) {
     options(na.action = old_opt)
     on.exit(expr = NULL)
 
-    if (!object$one_hot) {
+    if(!object$one_hot) {
       indicators <- indicators[, colnames(indicators) != "(Intercept)", drop = FALSE]
     }
 
