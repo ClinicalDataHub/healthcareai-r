@@ -133,14 +133,14 @@ prep.step_dummy_hcai <- function(x, training, info = NULL, ...) {
     )
 
 
-  ## I hate doing this but currently we are going to have
-  ## to save the terms object from the original (= training)
-  ## data
+  # I hate doing this but currently we are going to have
+  # to save the terms object from the original (= training)
+  # data
   levels <- vector(mode = "list", length = length(col_names))
   names(levels) <- col_names
   for (i in seq_along(col_names)) {
     form_chr <- paste0("~", col_names[i])
-    if(x$one_hot) {
+    if (x$one_hot) {
       form_chr <- paste0(form_chr, "-1")
     }
     form <- as.formula(form_chr)
@@ -199,7 +199,7 @@ bake.step_dummy_hcai <- function(object, newdata, ...) {
     orig_var <- names(object$levels)[i]
     fac_type <- attr(object$levels[[i]], "dataClasses")
 
-    if(!any(names(attributes(object$levels[[i]])) == "values"))
+    if (!any(names(attributes(object$levels[[i]])) == "values"))
       stop("Factor level values not recorded", call. = FALSE)
 
     warn_new_levels(
@@ -230,7 +230,7 @@ bake.step_dummy_hcai <- function(object, newdata, ...) {
     options(na.action = old_opt)
     on.exit(expr = NULL)
 
-    if(!object$one_hot) {
+    if (!object$one_hot) {
       indicators <- indicators[, colnames(indicators) != "(Intercept)", drop = FALSE]
     }
 
