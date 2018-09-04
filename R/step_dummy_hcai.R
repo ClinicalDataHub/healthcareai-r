@@ -92,6 +92,8 @@ step_dummy_hcai <-
         one_hot = one_hot,
         naming = naming,
         levels = levels,
+        ref_levels = NULL,
+        dummies = NULL,
         skip = skip
       )
     )
@@ -104,6 +106,8 @@ step_dummy_hcai_new <-
            one_hot = one_hot,
            naming = naming,
            levels = levels,
+           ref_levels = ref_levels,
+           dummies = dummies,
            skip = FALSE
   ) {
     step(
@@ -114,6 +118,8 @@ step_dummy_hcai_new <-
       one_hot = one_hot,
       naming = naming,
       levels = levels,
+      ref_levels = ref_levels,
+      dummies = dummies,
       skip = skip
     )
   }
@@ -158,6 +164,8 @@ prep.step_dummy_hcai <- function(x, training, info = NULL, ...) {
     ## in `bake.step_dummy` just prior to calling `model.matrix`
     attr(levels[[i]], "values") <-
       levels(getElement(training, col_names[i]))
+    dummies <- NULL
+    ref_levels <- NULL
   }
 
   step_dummy_hcai_new(
@@ -167,6 +175,8 @@ prep.step_dummy_hcai <- function(x, training, info = NULL, ...) {
     one_hot = x$one_hot,
     naming = x$naming,
     levels = levels,
+    ref_levels = ref_levels,
+    dummies = dummies,
     skip = x$skip
   )
 }
