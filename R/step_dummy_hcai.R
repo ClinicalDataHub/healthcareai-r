@@ -145,6 +145,17 @@ prep.step_dummy_hcai <- function(x, training, info = NULL, ...) {
   levels <- vector(mode = "list", length = length(col_names))
   names(levels) <- col_names
   for (i in seq_along(col_names)) {
+    training_col <- getElement(training, col_names[i])
+    existing_levels <- levels(training_col) %in% x$levels[[col_names[i]]]
+    if (any(existing_levels) &&
+        x$levels[[col_names[i]]][1] %in% levels(training_col)) {
+      x$levels[[col_names[i]]] <- c(x$levels[[col_names[i]]], levels(training_col)[!existing_levels])
+    } else {
+      training_mode <- as.character(Mode(training_col))
+      training_levels <- levels(training_col)
+      x$levels[[col_names[i]]] <- c(training_mode, training_levels[-which(training_levels == training_mode)])
+    }
+
     form_chr <- paste0("~", col_names[i])
     if (x$one_hot) {
       form_chr <- paste0(form_chr, "-1")
@@ -162,8 +173,10 @@ prep.step_dummy_hcai <- function(x, training, info = NULL, ...) {
     ## factor levels at the end of `prep.recipe` since it is
     ## not a factor anymore. We'll save them here and reset them
     ## in `bake.step_dummy` just prior to calling `model.matrix`
-    attr(levels[[i]], "values") <-
-      levels(getElement(training, col_names[i]))
+    factor_levels <- x$levels[[col_names[i]]]
+    attr(levels[[i]], "values") <- factor_levels
+    # attr(levels[[i]], "values") <-
+    #   levels(getElement(training, col_names[i]))
     dummies <- NULL
     ref_levels <- NULL
   }
