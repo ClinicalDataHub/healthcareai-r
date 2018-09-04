@@ -175,8 +175,6 @@ prep.step_dummy_hcai <- function(x, training, info = NULL, ...) {
     ## in `bake.step_dummy` just prior to calling `model.matrix`
     factor_levels <- x$levels[[col_names[i]]]
     attr(levels[[i]], "values") <- factor_levels
-    # attr(levels[[i]], "values") <-
-    #   levels(getElement(training, col_names[i]))
     dummies <- NULL
     ref_levels <- NULL
   }
